@@ -106,6 +106,8 @@ pub struct Tile<W: LayoutElement> {
     /// Scale of the output the tile is on (and rounds its sizes to).
     scale: f64,
 
+    is_hidden: bool,
+
     /// Clock for driving animations.
     pub(super) clock: Clock,
 
@@ -179,9 +181,14 @@ impl<W: LayoutElement> Tile<W> {
             rounded_corner_damage: Default::default(),
             view_size,
             scale,
+            is_hidden: false,
             clock,
             options,
         }
+    }
+
+    pub fn is_hidden(&self) -> bool {
+        self.is_hidden
     }
 
     pub fn update_config(

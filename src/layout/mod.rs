@@ -75,6 +75,7 @@ use crate::window::ResolvedWindowRules;
 pub mod closing_window;
 pub mod floating;
 pub mod focus_ring;
+pub mod hiding;
 pub mod insert_hint_element;
 pub mod monitor;
 pub mod opening_window;
@@ -3441,6 +3442,52 @@ impl<W: LayoutElement> Layout<W> {
                 for ws in workspaces {
                     if ws.has_window(window) {
                         ws.toggle_fullscreen(window);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn hide(&mut self, window: &W::Id) {
+        match &mut self.monitor_set {
+            MonitorSet::Normal { monitors, .. } => {
+                for mon in monitors {
+                    for ws in &mut mon.workspaces {
+                        if ws.has_window(window) {
+                            ws.hide(Some(window));
+                            return;
+                        }
+                    }
+                }
+            }
+            MonitorSet::NoOutputs { workspaces, .. } => {
+                for ws in workspaces {
+                    if ws.has_window(window) {
+                        ws.hide(Some(window));
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn show(&mut self, window: &W::Id) {
+        match &mut self.monitor_set {
+            MonitorSet::Normal { monitors, .. } => {
+                for mon in monitors {
+                    for ws in &mut mon.workspaces {
+                        if ws.has_window(window) {
+                            ws.show(window);
+                            return;
+                        }
+                    }
+                }
+            }
+            MonitorSet::NoOutputs { workspaces, .. } => {
+                for ws in workspaces {
+                    if ws.has_window(window) {
+                        ws.show(window);
                         return;
                     }
                 }

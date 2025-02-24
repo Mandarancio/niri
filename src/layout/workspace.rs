@@ -14,6 +14,7 @@ use smithay::wayland::compositor::with_states;
 use smithay::wayland::shell::xdg::SurfaceCachedState;
 
 use super::floating::{FloatingSpace, FloatingSpaceRenderElement};
+use super::hiding::HidingSpace;
 use super::scrolling::{
     Column, ColumnWidth, InsertHint, InsertPosition, ScrollDirection, ScrollingSpace,
     ScrollingSpaceRenderElement,
@@ -44,6 +45,9 @@ pub struct Workspace<W: LayoutElement> {
 
     /// Whether the floating layout is active instead of the scrolling layout.
     floating_is_active: FloatingActive,
+
+    /// Hide space
+    hiding: HidingSpace<W>,
 
     /// The original output of this workspace.
     ///
@@ -228,10 +232,13 @@ impl<W: LayoutElement> Workspace<W> {
             options.clone(),
         );
 
+        let hiding = HidingSpace::new(clock.clone());
+
         Self {
             scrolling,
             floating,
             floating_is_active: FloatingActive::No,
+            hiding,
             original_output,
             scale,
             transform: output.current_transform(),
@@ -281,10 +288,13 @@ impl<W: LayoutElement> Workspace<W> {
             options.clone(),
         );
 
+        let hiding = HidingSpace::new(clock.clone());
+
         Self {
             scrolling,
             floating,
             floating_is_active: FloatingActive::No,
+            hiding,
             output: None,
             scale,
             transform: Transform::Normal,
@@ -383,7 +393,8 @@ impl<W: LayoutElement> Workspace<W> {
     pub fn tiles(&self) -> impl Iterator<Item = &Tile<W>> + '_ {
         let scrolling = self.scrolling.tiles();
         let floating = self.floating.tiles();
-        scrolling.chain(floating)
+        let hiding = self.hiding.tiles();
+        scrolling.chain(floating.chain(hiding))
     }
 
     pub fn tiles_mut(&mut self) -> impl Iterator<Item = &mut Tile<W>> + '_ {
@@ -1184,6 +1195,42 @@ impl<W: LayoutElement> Workspace<W> {
             .unwrap();
         let current = tile.window().is_pending_fullscreen();
         self.set_fullscreen(window, !current);
+    }
+
+    pub fn hide(&mut self, id: Option<&W::Id>) {
+        let active_id = self.active_window().map(|win| win.id().clone());
+        let target_is_active = id.map_or(true, |id| Some(id) == active_id.as_ref());
+        let Some(id) = id.cloned().or(active_id) else {
+            return;
+        };
+
+        if self.floating.has_window(&id) {
+            let removed = self.floating.remove_tile(&id);
+            // FIXME: compute closest pos?
+            self.hiding.add_tile(removed.tile);
+            if target_is_active {
+                self.floating_is_active = FloatingActive::No;
+            }
+        } else if !self.hiding.has_window(&id) {
+            let removed = self.scrolling.remove_tile(&id, Transaction::new());
+
+            // Come up with a default floating position close to the tile position.
+            self.hiding.add_tile(removed.tile);
+        }
+    }
+
+    pub fn show(&mut self, id: &W::Id) {
+        if self.hiding.has_window(&id) {
+            let removed = self.hiding.remove_tile(id);
+            self.scrolling.add_tile(
+                None,
+                removed.tile,
+                true,
+                removed.width,
+                removed.is_full_width,
+                None,
+            );
+        }
     }
 
     pub fn toggle_window_floating(&mut self, id: Option<&W::Id>) {

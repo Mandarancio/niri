@@ -197,6 +197,22 @@ pub enum Action {
         #[cfg_attr(feature = "clap", arg(long))]
         id: Option<u64>,
     },
+    /// Hide a window.
+    #[cfg_attr(feature = "clap", clap(about = "Hide the focused window"))]
+    HideWindow {
+        /// Id of the window to close.
+        ///
+        /// If `None`, uses the focused window.
+        #[cfg_attr(feature = "clap", arg(long))]
+        id: Option<u64>,
+    },
+    /// Show a window
+    #[cfg_attr(feature = "clap", clap(about = "Show the focused window"))]
+    ShowWindow {
+        /// Id of the window to close.
+        #[cfg_attr(feature = "clap", arg(long))]
+        id: u64,
+    },
     /// Toggle fullscreen on a window.
     #[cfg_attr(
         feature = "clap",
