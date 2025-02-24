@@ -16,7 +16,9 @@ use futures_util::io::{AsyncReadExt, BufReader};
 use futures_util::{select_biased, AsyncBufReadExt, AsyncWrite, AsyncWriteExt, FutureExt as _};
 use niri_config::OutputName;
 use niri_ipc::state::{EventStreamState, EventStreamStatePart as _};
-use niri_ipc::{Event, KeyboardLayouts, OutputConfigChanged, Reply, Request, Response, Workspace};
+use niri_ipc::{
+    Event, KeyboardLayouts, Layout, OutputConfigChanged, Reply, Request, Response, Workspace,
+};
 use smithay::desktop::layer_map_for_output;
 use smithay::reexports::calloop::generic::Generic;
 use smithay::reexports::calloop::{Interest, LoopHandle, Mode, PostAction};
@@ -562,6 +564,10 @@ impl State {
                         is_active: mon.is_some_and(|mon| mon.active_workspace_idx() == ws_idx),
                         is_focused: Some(id) == focused_ws_id,
                         active_window_id: ws.active_window().map(|win| win.id().get()),
+                        layout: Layout {
+                            number_of_columns: ws.tiles().count() as u64,
+                            columns: vec![],
+                        },
                     }
                 })
                 .collect();

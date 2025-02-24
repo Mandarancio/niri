@@ -968,8 +968,42 @@ pub enum OutputConfigChanged {
     OutputWasMissing,
 }
 
+/// A workspace layout row
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
+pub struct LayoutRow {
+    /// Window id of the row.
+    pub window_id: u64,
+    /// Relative row height.
+    pub height: f64,
+}
+
+/// A workspace layout column
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
+pub struct LayoutColumn {
+    /// Each column can be visible or not (partially visible are considered visible).
+    pub is_visible: bool,
+    /// Relative width of the column.
+    pub width: f64,
+    /// Number of rows of the column.
+    pub number_of_rows: u64,
+    /// Array containing row descriptor of the column,
+    pub rows: Vec<LayoutRow>,
+}
+
+/// A workspace layout
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
+pub struct Layout {
+    /// Number of columns of the current layout.
+    pub number_of_columns: u64,
+    /// Array containing descriptor of each column.
+    pub columns: Vec<LayoutColumn>,
+}
+
 /// A workspace.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub struct Workspace {
     /// Unique id of this workspace.
@@ -1005,6 +1039,8 @@ pub struct Workspace {
     pub is_focused: bool,
     /// Id of the active window on this workspace, if any.
     pub active_window_id: Option<u64>,
+    /// Workspace layout
+    pub layout: Layout,
 }
 
 /// Configured keyboard layouts.
