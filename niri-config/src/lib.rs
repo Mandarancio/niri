@@ -1458,6 +1458,11 @@ pub enum Action {
     CloseWindow,
     #[knuffel(skip)]
     CloseWindowById(u64),
+    HideWindow,
+    #[knuffel(skip)]
+    HideWindowById(u64),
+    #[knuffel(skip)]
+    ShowWindow(u64),
     FullscreenWindow,
     #[knuffel(skip)]
     FullscreenWindowById(u64),
@@ -1647,6 +1652,9 @@ impl From<niri_ipc::Action> for Action {
             } => Self::ScreenshotWindowById { id, write_to_disk },
             niri_ipc::Action::CloseWindow { id: None } => Self::CloseWindow,
             niri_ipc::Action::CloseWindow { id: Some(id) } => Self::CloseWindowById(id),
+            niri_ipc::Action::HideWindow { id: None } => Self::HideWindow,
+            niri_ipc::Action::HideWindow { id: Some(id) } => Self::HideWindowById(id),
+            niri_ipc::Action::ShowWindow { id } => Self::ShowWindow(id),
             niri_ipc::Action::FullscreenWindow { id: None } => Self::FullscreenWindow,
             niri_ipc::Action::FullscreenWindow { id: Some(id) } => Self::FullscreenWindowById(id),
             niri_ipc::Action::FocusWindow { id } => Self::FocusWindow(id),
