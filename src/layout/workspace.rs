@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use niri_config::{CenterFocusedColumn, OutputName, PresetSize, Workspace as WorkspaceConfig};
-use niri_ipc::{ColumnDisplay, PositionChange, SizeChange};
+use niri_ipc::{ColumnDisplay, Layout, PositionChange, SizeChange};
 use smithay::backend::renderer::gles::GlesRenderer;
 use smithay::desktop::{layer_map_for_output, Window};
 use smithay::output::Output;
@@ -313,6 +313,17 @@ impl<W: LayoutElement> Workspace<W> {
 
     pub fn unname(&mut self) {
         self.name = None;
+    }
+
+    pub fn number_of_columns(&self) -> u64 {
+        self.scrolling.number_of_columns()
+    }
+
+    pub fn layout(&self) -> Layout {
+        Layout {
+            number_of_columns: self.number_of_columns(),
+            columns: self.scrolling.columns(),
+        }
     }
 
     pub fn has_windows_or_name(&self) -> bool {

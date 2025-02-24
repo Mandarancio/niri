@@ -4,7 +4,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use niri_config::{CenterFocusedColumn, CornerRadius, PresetSize, Struts};
-use niri_ipc::{ColumnDisplay, SizeChange};
+use niri_ipc::{ColumnDisplay, LayoutColumn, LayoutRow, SizeChange};
 use ordered_float::NotNan;
 use smithay::backend::renderer::gles::GlesRenderer;
 use smithay::utils::{Logical, Point, Rectangle, Scale, Serial, Size};
@@ -22,7 +22,7 @@ use crate::render_helpers::renderer::NiriRenderer;
 use crate::render_helpers::RenderTarget;
 use crate::utils::transaction::{Transaction, TransactionBlocker};
 use crate::utils::ResizeEdge;
-use crate::window::ResolvedWindowRules;
+use crate::window::{Mapped, ResolvedWindowRules};
 
 /// Amount of touchpad movement to scroll the view for the width of one working area.
 const VIEW_GESTURE_WORKING_AREA_MOVEMENT: f64 = 1200.;
@@ -408,6 +408,24 @@ impl<W: LayoutElement> ScrollingSpace<W> {
 
     pub fn is_empty(&self) -> bool {
         self.columns.is_empty()
+    }
+
+    pub fn number_of_columns(&self) -> u64 {
+        self.columns.len() as u64
+    }
+
+    pub fn columns(&self) -> Vec<LayoutColumn> {
+        let get_info = |c: &Column<W>, i: &ColumnData| -> LayoutColumn {
+            LayoutColumn {
+                is_visible: true,
+                width: i.width,
+                number_of_rows: c.number_of_rows(),
+                rows: c.rows(),
+            }
+        };
+        zip(self.columns.iter(), self.data.iter())
+            .map(|(a, b)| get_info(a, b))
+            .collect()
     }
 
     pub fn active_window(&self) -> Option<&W> {
@@ -4271,6 +4289,26 @@ impl<W: LayoutElement> Column<W> {
         }
 
         tiles_width
+    }
+
+    pub fn number_of_rows(&self) -> u64 {
+        self.tiles.len() as u64
+    }
+
+    pub fn rows(&self) -> Vec<LayoutRow> {
+        self.tiles
+            .iter()
+            .map(|tile| LayoutRow {
+                window_id: {
+                    let m: Result<&Mapped, ()> = tile.window().try_into();
+                    match m {
+                        Ok(m) => m.id().get(),
+                        Err(()) => 0,
+                    }
+                },
+                height: tile.tile_size().h,
+            })
+            .collect()
     }
 
     fn focus_index(&mut self, index: u8) {

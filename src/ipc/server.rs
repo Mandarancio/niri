@@ -16,9 +16,7 @@ use futures_util::io::{AsyncReadExt, BufReader};
 use futures_util::{select_biased, AsyncBufReadExt, AsyncWrite, AsyncWriteExt, FutureExt as _};
 use niri_config::OutputName;
 use niri_ipc::state::{EventStreamState, EventStreamStatePart as _};
-use niri_ipc::{
-    Event, KeyboardLayouts, Layout, OutputConfigChanged, Reply, Request, Response, Workspace,
-};
+use niri_ipc::{Event, KeyboardLayouts, OutputConfigChanged, Reply, Request, Response, Workspace};
 use smithay::desktop::layer_map_for_output;
 use smithay::reexports::calloop::generic::Generic;
 use smithay::reexports::calloop::{Interest, LoopHandle, Mode, PostAction};
@@ -517,6 +515,7 @@ impl State {
             if ipc_ws.idx != u8::try_from(ws_idx + 1).unwrap_or(u8::MAX)
                 || ipc_ws.name.as_ref() != ws.name()
                 || ipc_ws.output.as_ref() != output_name
+                || ipc_ws.layout != ws.layout()
             {
                 need_workspaces_changed = true;
                 break;
@@ -552,6 +551,7 @@ impl State {
         if need_workspaces_changed {
             events.clear();
 
+            println!("Workspace changed");
             let workspaces = layout
                 .workspaces()
                 .map(|(mon, ws_idx, ws)| {
@@ -564,10 +564,7 @@ impl State {
                         is_active: mon.is_some_and(|mon| mon.active_workspace_idx() == ws_idx),
                         is_focused: Some(id) == focused_ws_id,
                         active_window_id: ws.active_window().map(|win| win.id().get()),
-                        layout: Layout {
-                            number_of_columns: ws.tiles().count() as u64,
-                            columns: vec![],
-                        },
+                        layout: ws.layout(),
                     }
                 })
                 .collect();
